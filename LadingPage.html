@@ -1,1 +1,931 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Gestión de Denuncias Internas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2563eb;--blue-d:#1d4ed8;--blue-l:#dbeafe;--blue-p:#eff6ff;
+  --navy:#1e3a5f;--g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;
+  --g400:#94a3b8;--g500:#64748b;--g600:#475569;--g700:#334155;--g900:#0f172a;
+  --green:#16a34a;--green-l:#dcfce7;--amber:#d97706;--amber-l:#fef3c7;
+  --red:#dc2626;--red-l:#fee2e2;--purple:#7c3aed;--purple-l:#ede9fe;
+  --white:#fff;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --sh-md:0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --sh-lg:0 10px 40px rgba(0,0,0,.1),0 4px 12px rgba(0,0,0,.05);
+}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--g50);color:var(--g700);line-height:1.6;overflow-x:hidden}
 
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;animation:fadeIn .25s ease}
+.screen.active{display:flex;flex-direction:column}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── SHARED NAV ── */
+.topbar{height:60px;background:var(--white);border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;flex-shrink:0;position:sticky;top:0;z-index:50}
+.topbar-brand{display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:.9rem;color:var(--navy);cursor:pointer}
+.topbar-brand svg{flex-shrink:0}
+.topbar-spacer{flex:1}
+.topbar-right{display:flex;align-items:center;gap:.5rem}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;font-family:inherit;transition:all .15s ease;white-space:nowrap}
+.btn-primary{background:var(--blue);color:var(--white)}
+.btn-primary:hover{background:var(--blue-d);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--g600)}
+.btn-ghost:hover{background:var(--g100);color:var(--g900)}
+.btn-outline{background:transparent;border:1.5px solid var(--blue);color:var(--blue)}
+.btn-outline:hover{background:var(--blue);color:var(--white)}
+.btn-dark{background:var(--navy);color:var(--white)}
+.btn-dark:hover{background:var(--g900)}
+.btn-danger{background:var(--red);color:var(--white)}
+.btn-sm{padding:.35rem .7rem;font-size:.78rem;border-radius:6px}
+.btn-full{width:100%;justify-content:center;padding:.65rem}
+.btn-lg{padding:.7rem 1.5rem;font-size:.95rem;border-radius:10px}
+.btn-icon{padding:.4rem;border-radius:6px;background:var(--g100);color:var(--g600);border:none;cursor:pointer;display:flex;align-items:center}
+.btn-icon:hover{background:var(--g200)}
+
+/* ── FORM ELEMENTS ── */
+.form-group{margin-bottom:1rem}
+.form-label{display:block;font-size:.8rem;font-weight:600;color:var(--g700);margin-bottom:.4rem}
+.form-input,.form-select,.form-textarea{width:100%;border:1.5px solid var(--g200);border-radius:10px;padding:.6rem .85rem;font-size:.9rem;color:var(--g700);background:var(--white);font-family:inherit;transition:border-color .15s,box-shadow .15s;outline:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.form-textarea{resize:vertical;min-height:100px}
+.form-check{display:flex;align-items:center;gap:.5rem;font-size:.875rem;color:var(--g600);cursor:pointer}
+.form-check input{width:16px;height:16px;accent-color:var(--blue)}
+
+/* ── CARDS ── */
+.card{background:var(--white);border-radius:14px;border:1px solid var(--g200);box-shadow:var(--sh)}
+.card-p{padding:1.5rem}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .65rem;border-radius:50px;font-size:.72rem;font-weight:700}
+.badge-rev{background:var(--amber-l);color:var(--amber)}
+.badge-rec{background:var(--blue-l);color:var(--blue)}
+.badge-res{background:var(--green-l);color:var(--green)}
+.badge-pro{background:var(--purple-l);color:var(--purple)}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* ══════════════════════════════════
+   SCREEN: HOME
+══════════════════════════════════ */
+#s-home{background:linear-gradient(160deg,#f0f7ff 0%,#e8f1ff 40%,#f8fafc 100%);align-items:center;justify-content:center;text-align:center;padding:2rem}
+.home-inner{max-width:680px}
+.home-icon{width:72px;height:72px;background:var(--blue);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;box-shadow:0 8px 32px rgba(37,99,235,.35)}
+.home-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--blue-l);color:var(--blue);padding:.3rem .9rem;border-radius:50px;font-size:.78rem;font-weight:600;margin-bottom:1.25rem;border:1px solid rgba(37,99,235,.2)}
+.home-badge-dot{width:6px;height:6px;background:var(--blue);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.home h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:800;color:var(--navy);line-height:1.15;letter-spacing:-.02em;margin-bottom:1rem}
+.home h1 span{color:var(--blue)}
+.home-sub{font-size:1rem;color:var(--g600);max-width:520px;margin:0 auto 2rem}
+.home-actions{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.5rem}
+.home-cards{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:2rem}
+.home-card{background:var(--white);border-radius:12px;border:1px solid var(--g200);padding:1.25rem;width:200px;text-align:center;box-shadow:var(--sh)}
+.home-card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem}
+.home-card h4{font-size:.875rem;font-weight:700;color:var(--navy);margin-bottom:.3rem}
+.home-card p{font-size:.75rem;color:var(--g500)}
+.home-link{font-size:.85rem;color:var(--blue);cursor:pointer;font-weight:500}
+.home-link:hover{text-decoration:underline}
+
+/* ══════════════════════════════════
+   SCREEN: AUTH (Login / Register)
+══════════════════════════════════ */
+#s-login,#s-register,#s-consulta,#s-enviar{align-items:center;justify-content:center;padding:2rem;background:var(--g50)}
+.auth-card{background:var(--white);border-radius:20px;border:1px solid var(--g200);box-shadow:var(--sh-lg);width:100%;max-width:400px;padding:2rem}
+.auth-logo{text-align:center;margin-bottom:1.5rem}
+.auth-title{font-size:1.4rem;font-weight:800;color:var(--navy);text-align:center;margin-bottom:.25rem}
+.auth-sub{font-size:.85rem;color:var(--g500);text-align:center;margin-bottom:1.5rem}
+.auth-divider{text-align:center;font-size:.8rem;color:var(--g400);margin:1rem 0}
+.auth-footer-text{text-align:center;font-size:.82rem;color:var(--g500);margin-top:1rem}
+.auth-footer-text a{color:var(--blue);cursor:pointer;font-weight:600}
+.demo-box{background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:.75rem 1rem;margin-top:1rem;font-size:.78rem;color:var(--g600)}
+.demo-box strong{display:block;margin-bottom:.25rem;color:var(--g700)}
+
+/* ══════════════════════════════════
+   SCREEN: ENVIAR DENUNCIA
+══════════════════════════════════ */
+.enviar-card{background:var(--white);border-radius:20px;border:1px solid var(--g200);box-shadow:var(--sh-lg);width:100%;max-width:520px;padding:2rem}
+.info-box{background:var(--blue-p);border:1px solid var(--blue-l);border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem}
+.info-box p{font-size:.8rem;font-weight:600;color:var(--blue);margin-bottom:.3rem}
+.info-box ul{padding-left:1.1rem}
+.info-box li{font-size:.77rem;color:var(--g600);margin-bottom:.15rem}
+.file-upload{border:2px dashed var(--g200);border-radius:10px;padding:1rem;text-align:center;cursor:pointer;font-size:.82rem;color:var(--g400);transition:border-color .15s}
+.file-upload:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ══════════════════════════════════
+   SCREEN: CONSULTA
+══════════════════════════════════ */
+.consulta-card{background:var(--white);border-radius:20px;border:1px solid var(--g200);box-shadow:var(--sh-lg);width:100%;max-width:420px;padding:2rem}
+.search-icon{width:56px;height:56px;background:var(--blue-l);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem}
+
+/* ══════════════════════════════════
+   SCREEN: DETALLE DENUNCIA
+══════════════════════════════════ */
+#s-detalle{flex-direction:column;background:var(--g50)}
+.detalle-body{flex:1;padding:1.5rem;max-width:900px;width:100%;margin:0 auto}
+.detalle-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem}
+.detalle-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:600px){.detalle-grid{grid-template-columns:1fr}}
+.detail-row{margin-bottom:.65rem}
+.detail-label{font-size:.72rem;color:var(--g400);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.15rem}
+.detail-val{font-size:.9rem;color:var(--g700);font-weight:500}
+.timeline-item{display:flex;gap:.75rem;margin-bottom:.75rem}
+.timeline-dot{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.timeline-dot-done{background:var(--green-l)}
+.timeline-dot-cur{background:var(--amber-l)}
+.timeline-content small{font-size:.72rem;color:var(--g400)}
+.timeline-content p{font-size:.82rem;color:var(--g600)}
+.timeline-content strong{font-size:.85rem;color:var(--g700)}
+
+/* ══════════════════════════════════
+   SCREEN: ADMIN DASHBOARD
+══════════════════════════════════ */
+#s-admin{flex-direction:column;background:var(--g50)}
+.admin-body{flex:1;padding:1.5rem;max-width:1100px;width:100%;margin:0 auto}
+.stat-chips{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.stat-chip{background:var(--white);border:1px solid var(--g200);border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:center;gap:.75rem;flex:1;min-width:120px;box-shadow:var(--sh)}
+.stat-chip-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-chip-val{font-size:1.5rem;font-weight:800;color:var(--navy);line-height:1}
+.stat-chip-label{font-size:.72rem;color:var(--g400);font-weight:500}
+.table-card{background:var(--white);border-radius:14px;border:1px solid var(--g200);box-shadow:var(--sh);overflow:hidden}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--g100)}
+.table-title{font-size:.95rem;font-weight:700;color:var(--navy)}
+table{width:100%;border-collapse:collapse}
+th{font-size:.72rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.05em;padding:.75rem 1rem;text-align:left;border-bottom:1px solid var(--g100)}
+td{padding:.85rem 1rem;font-size:.85rem;color:var(--g700);border-bottom:1px solid var(--g50);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--g50)}
+.td-code{font-weight:700;color:var(--navy);font-size:.82rem}
+.actions-cell{display:flex;gap:.4rem;align-items:center}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--g400)}
+.empty-state svg{margin-bottom:.75rem;opacity:.4}
+.empty-state p{font-size:.875rem}
+
+/* ══════════════════════════════════
+   SCREEN: COMUNICACIÓN SEGURA
+══════════════════════════════════ */
+#s-chat{flex-direction:column;background:var(--g50)}
+.chat-body{flex:1;display:flex;flex-direction:column;padding:1.5rem;max-width:800px;width:100%;margin:0 auto;gap:1rem}
+.chat-secure-banner{background:var(--blue-l);border:1px solid rgba(37,99,235,.2);border-radius:10px;padding:.65rem 1rem;display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--blue);font-weight:500}
+.chat-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.82rem}
+.chat-info-item strong{display:block;font-size:.7rem;color:var(--g400);text-transform:uppercase;margin-bottom:.15rem}
+.messages-box{flex:1;background:var(--white);border-radius:14px;border:1px solid var(--g200);display:flex;flex-direction:column;min-height:300px}
+.messages-list{flex:1;padding:1rem;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem}
+.msg{max-width:80%}
+.msg-admin{align-self:flex-start}
+.msg-user{align-self:flex-end}
+.msg-from{font-size:.7rem;font-weight:700;color:var(--g400);margin-bottom:.2rem}
+.msg-bubble{border-radius:12px;padding:.6rem .9rem;font-size:.85rem;line-height:1.5}
+.msg-admin .msg-bubble{background:var(--g100);color:var(--g700);border-bottom-left-radius:4px}
+.msg-user .msg-bubble{background:var(--blue);color:var(--white);border-bottom-right-radius:4px}
+.msg-time{font-size:.65rem;color:var(--g400);margin-top:.2rem}
+.msg-input-row{display:flex;gap:.6rem;padding:.75rem 1rem;border-top:1px solid var(--g100);align-items:center}
+.msg-input{flex:1;border:1.5px solid var(--g200);border-radius:10px;padding:.55rem .85rem;font-size:.875rem;font-family:inherit;outline:none}
+.msg-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+
+/* ══════════════════════════════════
+   SCREEN: REPORTES
+══════════════════════════════════ */
+#s-reportes{flex-direction:column;background:var(--g50)}
+.reportes-body{flex:1;padding:1.5rem;max-width:1100px;width:100%;margin:0 auto}
+.reportes-filters{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.5rem;background:var(--white);border:1px solid var(--g200);border-radius:12px;padding:1rem;align-items:center}
+.reportes-filters label{font-size:.78rem;font-weight:600;color:var(--g600)}
+.reportes-filters select{border:1.5px solid var(--g200);border-radius:8px;padding:.4rem .7rem;font-size:.82rem;color:var(--g700);outline:none;font-family:inherit}
+.rep-stat-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1rem;margin-bottom:1.5rem}
+.rep-stat{background:var(--white);border:1px solid var(--g200);border-radius:12px;padding:1rem;box-shadow:var(--sh)}
+.rep-stat-val{font-size:1.75rem;font-weight:800;color:var(--navy);letter-spacing:-.02em}
+.rep-stat-label{font-size:.72rem;color:var(--g400);font-weight:500;margin-top:.15rem}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:640px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--white);border-radius:14px;border:1px solid var(--g200);padding:1.25rem;box-shadow:var(--sh)}
+.chart-title{font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:1.25rem}
+.bar-chart{display:flex;align-items:flex-end;gap:.75rem;height:100px}
+.bar-group{display:flex;flex-direction:column;align-items:center;gap:.35rem;flex:1}
+.bar{width:100%;background:var(--blue);border-radius:5px 5px 0 0;transition:height .4s ease;min-height:4px}
+.bar-label{font-size:.65rem;color:var(--g500);text-align:center}
+.bar-val{font-size:.65rem;font-weight:700;color:var(--blue)}
+/* Pie via conic-gradient */
+.pie-wrap{display:flex;align-items:center;gap:1.25rem}
+.pie{width:100px;height:100px;border-radius:50%;flex-shrink:0}
+.pie-legend{display:flex;flex-direction:column;gap:.4rem}
+.pie-item{display:flex;align-items:center;gap:.5rem;font-size:.75rem;color:var(--g600)}
+.pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.trend-chart{position:relative;height:80px}
+.trend-svg{width:100%;height:100%}
+
+/* ══════════════════════════════════
+   SCREEN: SUCCESS
+══════════════════════════════════ */
+#s-success{align-items:center;justify-content:center;padding:2rem;background:var(--g50)}
+.success-card{background:var(--white);border-radius:20px;padding:2.5rem;text-align:center;max-width:400px;width:100%;box-shadow:var(--sh-lg);border:1px solid var(--g200)}
+.success-icon{width:64px;height:64px;background:var(--green-l);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem}
+.success-card h3{font-size:1.25rem;font-weight:800;color:var(--navy);margin-bottom:.5rem}
+.success-card p{color:var(--g600);font-size:.875rem;margin-bottom:1rem}
+.code-display{background:var(--g50);border:2px dashed var(--g200);border-radius:12px;padding:.85rem 1.5rem;font-size:1.4rem;font-weight:800;color:var(--navy);letter-spacing:.1em;margin:0 auto 1.5rem;cursor:pointer;transition:border-color .15s}
+.code-display:hover{border-color:var(--blue)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--g200);border-radius:99px}
+
+/* Topbar back btn */
+.back-btn{display:flex;align-items:center;gap:.3rem;font-size:.85rem;color:var(--g600);cursor:pointer;font-weight:500;padding:.3rem .5rem;border-radius:6px}
+.back-btn:hover{background:var(--g100);color:var(--g900)}
+
+/* Filter select */
+.filter-select{border:1.5px solid var(--g200);border-radius:8px;padding:.35rem .65rem;font-size:.82rem;color:var(--g700);outline:none;font-family:inherit;background:var(--white)}
+.filter-select:focus{border-color:var(--blue)}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     SCREEN: HOME
+══════════════════════════════════ -->
+<div class="screen active" id="s-home">
+  <div class="home-inner">
+    <div class="home-badge"><span class="home-badge-dot"></span> Plataforma segura y confidencial</div>
+    <div class="home-icon">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <path d="M18 3L5 10v9c0 8.07 5.8 15.62 13 17.93C25.2 34.62 31 27.07 31 19v-9L18 3z" fill="white" opacity=".9"/>
+        <path d="M12 18l4.5 4.5L24 14" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1 class="home">Sistema de Gestión de<br><span style="color:var(--blue)">Denuncias Internas</span></h1>
+    <p class="home-sub">Plataforma segura y confidencial para registrar y gestionar denuncias internas. Su privacidad y seguridad son nuestra prioridad.</p>
+    <div class="home-actions">
+      <button class="btn btn-primary btn-lg" onclick="go('s-enviar')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        Enviar Denuncia
+      </button>
+      <button class="btn btn-outline btn-lg" onclick="go('s-login')">Iniciar Sesión</button>
+      <button class="btn btn-dark btn-lg" onclick="loginAsAdmin()">Acceso Administrador</button>
+    </div>
+    <p><span class="home-link" onclick="go('s-consulta')">¿Ya enviaste una denuncia? Consulta su estado con tu código →</span></p>
+    <div class="home-cards">
+      <div class="home-card">
+        <div class="home-card-icon" style="background:#dbeafe">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h4>Confidencialidad</h4>
+        <p>Todas las denuncias son tratadas con absoluta confidencialidad y seguridad.</p>
+      </div>
+      <div class="home-card">
+        <div class="home-card-icon" style="background:#dcfce7">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <h4>Trazabilidad</h4>
+        <p>Seguimiento completo del estado de su denuncia en todo momento.</p>
+      </div>
+      <div class="home-card">
+        <div class="home-card-icon" style="background:#fef3c7">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <h4>Anonimato</h4>
+        <p>Opción de realizar denuncias de forma completamente anónima.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: LOGIN
+══════════════════════════════════ -->
+<div class="screen" id="s-login">
+  <div class="topbar">
+    <span class="back-btn" onclick="go('s-home')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Volver al inicio
+    </span>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--g50)">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="12" fill="#eff6ff"/>
+          <path d="M20 6L8 12v8c0 7.72 5.14 14.94 12 17C27.86 34.94 33 27.72 33 20v-8L20 6z" fill="#2563eb"/>
+          <path d="M15 20l3.5 3.5L25 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="auth-title">Iniciar Sesión</h2>
+      <div class="form-group">
+        <label class="form-label">Correo electrónico</label>
+        <input class="form-input" type="email" placeholder="ejemplo@correo.com" id="login-email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input class="form-input" type="password" placeholder="••••••••" id="login-pass">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="loginUser()">Iniciar Sesión</button>
+      <div class="auth-divider">¿Olvidaste tu contraseña? <a href="#" style="color:var(--blue)">Recupérala</a></div>
+      <div class="auth-footer-text">¿No tienes cuenta? <a onclick="go('s-register')">Regístrate</a></div>
+      <div class="demo-box">
+        <strong>Credenciales de prueba:</strong>
+        Email: user@example.com<br>Contraseña: user123
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: REGISTER
+══════════════════════════════════ -->
+<div class="screen" id="s-register">
+  <div class="topbar">
+    <span class="back-btn" onclick="go('s-home')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Volver al inicio
+    </span>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--g50)">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="12" fill="#eff6ff"/>
+          <path d="M20 6L8 12v8c0 7.72 5.14 14.94 12 17C27.86 34.94 33 27.72 33 20v-8L20 6z" fill="#2563eb"/>
+          <path d="M15 20l3.5 3.5L25 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="auth-title">Crear Cuenta</h2>
+      <div class="form-group">
+        <label class="form-label">Nombre completo</label>
+        <input class="form-input" type="text" placeholder="Juan Pérez">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo electrónico</label>
+        <input class="form-input" type="email" placeholder="ejemplo@correo.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input class="form-input" type="password" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmar contraseña</label>
+        <input class="form-input" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="loginUser()">Crear Cuenta</button>
+      <div class="auth-footer-text">¿Ya tienes cuenta? <a onclick="go('s-login')">Inicia sesión</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: ENVIAR DENUNCIA
+══════════════════════════════════ -->
+<div class="screen" id="s-enviar">
+  <div class="topbar">
+    <span class="back-btn" onclick="go('s-home')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Volver
+    </span>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--g50)">
+    <div class="enviar-card">
+      <div style="text-align:center;margin-bottom:1.25rem">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="12" fill="#eff6ff"/>
+          <path d="M20 6L8 12v8c0 7.72 5.14 14.94 12 17C27.86 34.94 33 27.72 33 20v-8L20 6z" fill="#2563eb"/>
+          <path d="M15 20l3.5 3.5L25 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h2 style="font-size:1.3rem;font-weight:800;color:var(--navy);margin-top:.75rem">Enviar Denuncia</h2>
+        <p style="font-size:.82rem;color:var(--g500);margin-top:.25rem">Completa el formulario de manera detallada. Tu información será tratada con confidencialidad.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-check">
+          <input type="checkbox" id="chk-anonimo"> Enviar denuncia de forma anónima
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de denuncia</label>
+        <select class="form-select" id="tipo-denuncia">
+          <option>Acoso laboral</option>
+          <option>Fraude</option>
+          <option>Mala conducta</option>
+          <option>Discriminación</option>
+          <option>Corrupción</option>
+          <option>Acoso</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción detallada</label>
+        <textarea class="form-textarea" id="desc-denuncia" placeholder="Describe los hechos de manera clara y detallada. Incluye fechas, lugares, personas involucradas y cualquier información relevante."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adjuntar evidencias (opcional)</label>
+        <div class="file-upload">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:.3rem"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><br>
+          Seleccionar archivos
+        </div>
+      </div>
+      <div class="info-box">
+        <p>Al enviar esta denuncia:</p>
+        <ul>
+          <li>Se generará un código único para seguimiento</li>
+          <li>La información será tratada con absoluta confidencialidad</li>
+          <li>Recibirás actualizaciones sobre el estado del caso</li>
+          <li>Podrás comunicarte de forma segura con el equipo investigador</li>
+        </ul>
+      </div>
+      <div style="display:flex;gap:.6rem">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="submitDenuncia()">Enviar Denuncia</button>
+        <button class="btn btn-ghost" onclick="go('s-home')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: SUCCESS
+══════════════════════════════════ -->
+<div class="screen" id="s-success">
+  <div class="success-card">
+    <div class="success-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+    </div>
+    <h3>¡Denuncia enviada con éxito!</h3>
+    <p>Tu denuncia ha sido registrada. Guarda tu código de seguimiento para consultar el estado en cualquier momento.</p>
+    <div class="code-display" id="gen-code" title="Haz clic para copiar">ABC12345</div>
+    <p style="font-size:.75rem;color:var(--g400);margin-bottom:1.25rem">Haz clic en el código para copiarlo</p>
+    <button class="btn btn-primary btn-full" style="margin-bottom:.5rem" onclick="go('s-consulta')">Ver Estado de mi Denuncia</button>
+    <button class="btn btn-ghost btn-full" onclick="go('s-home')">Volver al Inicio</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: CONSULTA
+══════════════════════════════════ -->
+<div class="screen" id="s-consulta">
+  <div class="topbar">
+    <span class="back-btn" onclick="go('s-home')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Volver al inicio
+    </span>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--g50)">
+    <div class="consulta-card">
+      <div class="search-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
+      <h2 class="auth-title">Consultar Estado de Denuncia</h2>
+      <p class="auth-sub">Ingresa tu código único para ver el estado actual de tu denuncia</p>
+      <div class="form-group">
+        <label class="form-label">Código de seguimiento</label>
+        <input class="form-input" type="text" placeholder="ABC12345" id="consulta-codigo" style="text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:1rem">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="buscarDenuncia()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Buscar Denuncia
+      </button>
+      <div style="text-align:center;margin-top:1.25rem">
+        <span class="back-btn" style="display:inline-flex;justify-content:center" onclick="go('s-home')">Volver al Inicio</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: DETALLE DENUNCIA
+══════════════════════════════════ -->
+<div class="screen" id="s-detalle">
+  <div class="topbar">
+    <span class="back-btn" id="detalle-back" onclick="go('s-consulta')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Volver
+    </span>
+    <span style="font-weight:700;color:var(--navy)">Detalle de Denuncia</span>
+    <span class="topbar-spacer"></span>
+    <span class="badge badge-rev" id="detalle-badge-top">En Revisión</span>
+  </div>
+  <div class="detalle-body">
+    <div class="detalle-header">
+      <div>
+        <p style="font-size:.78rem;color:var(--g400);font-weight:500">Código: <strong id="detalle-codigo" style="color:var(--navy)">ABC12345</strong></p>
+      </div>
+    </div>
+    <div class="detalle-grid">
+      <div class="card card-p">
+        <h3 style="font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:1rem">Información General</h3>
+        <div class="detail-row"><div class="detail-label">Código de seguimiento</div><div class="detail-val" id="d-codigo">ABC12345</div></div>
+        <div class="detail-row"><div class="detail-label">Tipo de denuncia</div><div class="detail-val" id="d-tipo">Acoso</div></div>
+        <div class="detail-row"><div class="detail-label">Estado actual</div><div class="detail-val"><span class="badge badge-rev" id="d-estado">En Revisión</span></div></div>
+        <div class="detail-row"><div class="detail-label">Fecha de registro</div><div class="detail-val" id="d-fecha">14 de abril de 2026</div></div>
+        <div class="detail-row"><div class="detail-label">Modalidad</div><div class="detail-val" id="d-modalidad">Denuncia Identificada</div></div>
+        <div class="detail-row"><div class="detail-label">Denunciante</div><div class="detail-val" id="d-denunciante">Usuario Demo</div></div>
+      </div>
+      <div class="card card-p">
+        <h3 style="font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:1rem">Historial de Estados</h3>
+        <div class="timeline-item">
+          <div class="timeline-dot timeline-dot-done">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          </div>
+          <div class="timeline-content">
+            <strong>Recibida</strong>
+            <small>14/4/2026 · 19:00</small>
+            <p>Por: Sistema</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot timeline-dot-cur">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          </div>
+          <div class="timeline-content">
+            <strong id="d-estado-hist">En Revisión</strong>
+            <small>15/4/2026 · 10:00</small>
+            <p>Por: Administrador</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card card-p" style="margin-bottom:1rem">
+      <h3 style="font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:.75rem">Descripción de la Denuncia</h3>
+      <p style="font-size:.875rem;color:var(--g600);line-height:1.65" id="d-descripcion">Acoso laboral por parte de supervisor</p>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="go('s-chat')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Abrir Comunicación Segura
+      </button>
+      <button class="btn btn-ghost" id="detalle-volver" onclick="go('s-consulta')">Volver</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: ADMIN DASHBOARD
+══════════════════════════════════ -->
+<div class="screen" id="s-admin">
+  <div class="topbar">
+    <span class="topbar-brand">
+      <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.18 5.16 13.9 12 15.93C23.84 29.9 29 23.18 29 16V8L16 2z" fill="#2563eb"/><path d="M11 16l3.5 3.5L21 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Panel de Administración
+    </span>
+    <span class="topbar-spacer"></span>
+    <button class="btn btn-ghost btn-sm" onclick="go('s-reportes')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Reportes
+    </button>
+    <span style="font-size:.82rem;color:var(--g500);padding:0 .5rem">Administrador</span>
+    <button class="btn btn-ghost btn-sm" onclick="go('s-home')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Cerrar Sesión
+    </button>
+  </div>
+  <div class="admin-body">
+    <div class="stat-chips">
+      <div class="stat-chip">
+        <div class="stat-chip-icon" style="background:#dbeafe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div><div class="stat-chip-val">3</div><div class="stat-chip-label">Total</div></div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-chip-icon" style="background:#fef3c7"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div><div class="stat-chip-val">1</div><div class="stat-chip-label">Nuevos</div></div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-chip-icon" style="background:#ede9fe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+        <div><div class="stat-chip-val">1</div><div class="stat-chip-label">En Proceso</div></div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-chip-icon" style="background:#dcfce7"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div>
+        <div><div class="stat-chip-val">1</div><div class="stat-chip-label">Cerradas</div></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-title">Gestión de Denuncias</span>
+        <select class="filter-select" id="admin-filter" onchange="filterTable()">
+          <option value="todas">Todas</option>
+          <option value="Recibida">Recibida</option>
+          <option value="En Revisión">En Revisión</option>
+          <option value="En Proceso">En Proceso</option>
+          <option value="Resuelta">Resuelta</option>
+        </select>
+      </div>
+      <div id="admin-table-body">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: CHAT (Comunicación Segura)
+══════════════════════════════════ -->
+<div class="screen" id="s-chat">
+  <div class="topbar">
+    <span class="back-btn" onclick="goBack()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Volver
+    </span>
+    <div>
+      <span style="font-weight:700;color:var(--navy);font-size:.95rem">Comunicación Segura</span><br>
+      <span style="font-size:.75rem;color:var(--g400)" id="chat-denuncia-ref">Denuncia: ABC12345</span>
+    </div>
+  </div>
+  <div class="chat-body">
+    <div class="chat-secure-banner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Canal de Comunicación Confidencial — Esta conversación es privada y segura. Todos los mensajes son confidenciales.
+    </div>
+    <div class="card card-p" style="padding:1rem">
+      <h3 style="font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:.75rem">Detalles de la Denuncia</h3>
+      <div class="chat-info-grid">
+        <div class="chat-info-item"><strong>Código</strong><span id="chat-codigo">ABC12345</span></div>
+        <div class="chat-info-item"><strong>Tipo</strong><span id="chat-tipo">Acoso</span></div>
+        <div class="chat-info-item"><strong>Fecha</strong><span id="chat-fecha">14/4/2026</span></div>
+        <div class="chat-info-item"><strong>Modalidad</strong><span id="chat-modalidad">Identificada</span></div>
+      </div>
+    </div>
+    <div class="messages-box">
+      <div class="messages-list" id="messages-list">
+        <div class="msg msg-admin">
+          <div class="msg-from">Administrador</div>
+          <div class="msg-bubble">Hemos recibido tu denuncia y estamos revisando el caso. Te mantendremos informado del avance.</div>
+          <div class="msg-time">14/4/2026 10:00</div>
+        </div>
+      </div>
+      <div class="msg-input-row">
+        <input class="msg-input" id="msg-input" placeholder="Escribe tu mensaje..." onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="btn btn-primary btn-sm" onclick="sendMsg()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SCREEN: REPORTES ESTADÍSTICOS
+══════════════════════════════════ -->
+<div class="screen" id="s-reportes">
+  <div class="topbar">
+    <span class="back-btn" onclick="go('s-admin')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Volver
+    </span>
+    <span style="font-weight:700;color:var(--navy)">Reportes Estadísticos</span>
+    <span class="topbar-spacer"></span>
+    <button class="btn btn-outline btn-sm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Exportar PDF
+    </button>
+  </div>
+  <div class="reportes-body">
+    <div class="reportes-filters">
+      <label>Filtrar por Tipo
+        <select style="margin-left:.4rem"><option>Todos</option><option>Acoso</option><option>Fraude</option><option>Mala conducta</option></select>
+      </label>
+      <label style="margin-left:1rem">Filtrar por Estado
+        <select style="margin-left:.4rem"><option>Todos</option><option>Recibida</option><option>En Revisión</option><option>Resuelta</option></select>
+      </label>
+    </div>
+    <div class="rep-stat-chips">
+      <div class="rep-stat"><div class="rep-stat-val">3</div><div class="rep-stat-label">Total de Denuncias</div></div>
+      <div class="rep-stat"><div class="rep-stat-val" style="color:var(--green)">1</div><div class="rep-stat-label">Casos Cerrados</div></div>
+      <div class="rep-stat"><div class="rep-stat-val" style="color:var(--amber)">1</div><div class="rep-stat-label">En Revisión</div></div>
+      <div class="rep-stat"><div class="rep-stat-val" style="color:var(--purple)">0</div><div class="rep-stat-label">En Proceso</div></div>
+      <div class="rep-stat"><div class="rep-stat-val" style="color:var(--g400)">1</div><div class="rep-stat-label">Anónimas</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Denuncias por Tipo</div>
+        <div class="bar-chart">
+          <div class="bar-group">
+            <div class="bar-val">1</div>
+            <div class="bar" style="height:80%"></div>
+            <div class="bar-label">Acoso</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-val">1</div>
+            <div class="bar" style="height:80%"></div>
+            <div class="bar-label">Fraude</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-val">1</div>
+            <div class="bar" style="height:80%"></div>
+            <div class="bar-label">Mala conducta</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Denuncias por Estado</div>
+        <div class="pie-wrap">
+          <div class="pie" style="background:conic-gradient(#2563eb 0% 33%,#d97706 33% 66%,#16a34a 66% 100%)"></div>
+          <div class="pie-legend">
+            <div class="pie-item"><span class="pie-dot" style="background:#2563eb"></span>En revisión: 1</div>
+            <div class="pie-item"><span class="pie-dot" style="background:#d97706"></span>Recibida: 1</div>
+            <div class="pie-item"><span class="pie-dot" style="background:#16a34a"></span>Resuelta: 1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Evolución Mensual</div>
+      <svg class="trend-svg" viewBox="0 0 400 80" preserveAspectRatio="none">
+        <defs><linearGradient id="grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2563eb" stop-opacity=".2"/><stop offset="100%" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs>
+        <path d="M20 15 L100 20 L180 35 L260 25 L340 55 L380 65" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20 15 L100 20 L180 35 L260 25 L340 55 L380 65 L380 80 L20 80 Z" fill="url(#grad)"/>
+        <circle cx="20" cy="15" r="4" fill="#2563eb"/>
+        <circle cx="100" cy="20" r="4" fill="#2563eb"/>
+        <circle cx="180" cy="35" r="4" fill="#2563eb"/>
+        <circle cx="260" cy="25" r="4" fill="#2563eb"/>
+        <circle cx="340" cy="55" r="4" fill="#2563eb"/>
+        <circle cx="380" cy="65" r="4" fill="#2563eb"/>
+        <text x="20" y="75" font-size="9" fill="#94a3b8" text-anchor="middle">Ene</text>
+        <text x="100" y="75" font-size="9" fill="#94a3b8" text-anchor="middle">Feb</text>
+        <text x="180" y="75" font-size="9" fill="#94a3b8" text-anchor="middle">Mar</text>
+        <text x="260" y="75" font-size="9" fill="#94a3b8" text-anchor="middle">Abr</text>
+        <text x="340" y="75" font-size="9" fill="#94a3b8" text-anchor="middle">May</text>
+        <text x="380" y="75" font-size="9" fill="#94a3b8" text-anchor="middle">Jun</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const DENUNCIAS = [
+  {id:1,codigo:'ABC12345',tipo:'Acoso',estado:'En Revisión',fecha:'14/4/2026',usuario:'Usuario Demo',modalidad:'Denuncia Identificada',denunciante:'Usuario Demo',descripcion:'Acoso laboral por parte de supervisor directo en el área de operaciones. Los hechos ocurrieron durante los meses de marzo y abril de 2026.'},
+  {id:2,codigo:'XYZ98765',tipo:'Fraude',estado:'Recibida',fecha:'10/4/2026',usuario:'Anónimo',modalidad:'Denuncia Anónima',denunciante:'Anónimo',descripcion:'Irregularidades detectadas en el proceso de facturación del departamento de finanzas.'},
+  {id:3,codigo:'DEF54321',tipo:'Mala Conducta',estado:'Resuelta',fecha:'18/3/2026',usuario:'Usuario Demo',modalidad:'Denuncia Identificada',denunciante:'Usuario Demo',descripcion:'Comportamiento inadecuado de compañero de trabajo en reuniones de equipo.'},
+];
+
+let currentUser = null; // 'user' | 'admin'
+let lastScreen = 's-home';
+let selectedDenuncia = null;
+
+// ── NAVIGATION ──
+function go(screenId) {
+  lastScreen = document.querySelector('.screen.active')?.id || 's-home';
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goBack() {
+  go(lastScreen);
+}
+
+// ── AUTH ──
+function loginUser() {
+  currentUser = 'user';
+  go('s-detalle');
+  loadDetalle(DENUNCIAS[0], 's-consulta');
+}
+
+function loginAsAdmin() {
+  currentUser = 'admin';
+  renderAdminTable('todas');
+  go('s-admin');
+}
+
+// ── ENVIAR DENUNCIA ──
+function submitDenuncia() {
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ', nums='0123456789';
+  let code='';
+  for(let i=0;i<3;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+  for(let i=0;i<5;i++) code+=nums[Math.floor(Math.random()*nums.length)];
+  document.getElementById('gen-code').textContent=code;
+  document.getElementById('gen-code').onclick=()=>{navigator.clipboard.writeText(code).catch(()=>{})};
+  go('s-success');
+}
+
+// ── CONSULTA ──
+function buscarDenuncia() {
+  const raw = document.getElementById('consulta-codigo').value.trim().toUpperCase();
+  const found = DENUNCIAS.find(d => d.codigo === raw);
+  if(found) {
+    loadDetalle(found, 's-consulta');
+    go('s-detalle');
+  } else {
+    // Try demo with any input
+    if(raw.length >= 3) {
+      loadDetalle(DENUNCIAS[0], 's-consulta');
+      go('s-detalle');
+    } else {
+      alert('Código no encontrado. Prueba con: ABC12345, XYZ98765 o DEF54321');
+    }
+  }
+}
+
+function loadDetalle(d, backScreen) {
+  selectedDenuncia = d;
+  document.getElementById('detalle-codigo').textContent = d.codigo;
+  document.getElementById('d-codigo').textContent = d.codigo;
+  document.getElementById('d-tipo').textContent = d.tipo;
+  document.getElementById('d-fecha').textContent = d.fecha;
+  document.getElementById('d-modalidad').textContent = d.modalidad;
+  document.getElementById('d-denunciante').textContent = d.denunciante;
+  document.getElementById('d-descripcion').textContent = d.descripcion;
+  document.getElementById('d-estado-hist').textContent = d.estado;
+
+  const badgeMap = {'En Revisión':'badge-rev','Recibida':'badge-rec','Resuelta':'badge-res','En Proceso':'badge-pro'};
+  const cls = badgeMap[d.estado]||'badge-rec';
+  ['d-estado','detalle-badge-top'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.className='badge '+cls;
+    el.textContent=d.estado;
+  });
+
+  document.getElementById('detalle-back').onclick = () => go(backScreen);
+  document.getElementById('detalle-volver').onclick = () => go(backScreen);
+
+  // chat
+  document.getElementById('chat-denuncia-ref').textContent='Denuncia: '+d.codigo;
+  document.getElementById('chat-codigo').textContent=d.codigo;
+  document.getElementById('chat-tipo').textContent=d.tipo;
+  document.getElementById('chat-fecha').textContent=d.fecha;
+  document.getElementById('chat-modalidad').textContent=d.modalidad.replace('Denuncia ','');
+}
+
+// ── ADMIN TABLE ──
+function renderAdminTable(filter) {
+  const list = filter==='todas' ? DENUNCIAS : DENUNCIAS.filter(d=>d.estado===filter);
+  const container = document.getElementById('admin-table-body');
+  if(!list.length){
+    container.innerHTML=`<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><p>No hay denuncias con este filtro</p></div>`;
+    return;
+  }
+  const badgeMap={'En Revisión':'badge-rev','Recibida':'badge-rec','Resuelta':'badge-res','En Proceso':'badge-pro'};
+  const rows=list.map(d=>`
+    <tr>
+      <td>${d.id}</td>
+      <td class="td-code">${d.codigo}</td>
+      <td>${d.tipo}</td>
+      <td><span class="badge ${badgeMap[d.estado]||'badge-rec'}">${d.estado}</span></td>
+      <td>${d.fecha}</td>
+      <td>${d.usuario}</td>
+      <td>
+        <div class="actions-cell">
+          <select class="filter-select" style="font-size:.72rem;padding:.25rem .5rem" onchange="cambiarEstado(${d.id},this.value)">
+            <option ${d.estado==='Recibida'?'selected':''}>Recibida</option>
+            <option ${d.estado==='En Revisión'?'selected':''}>En Revisión</option>
+            <option ${d.estado==='En Proceso'?'selected':''}>En Proceso</option>
+            <option ${d.estado==='Resuelta'?'selected':''}>Resuelta</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="adminVerDetalle(${d.id})">Ver</button>
+          <button class="btn-icon btn-sm" title="Comunicación">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  container.innerHTML=`<table><thead><tr><th>ID</th><th>CÓDIGO</th><th>TIPO</th><th>ESTADO</th><th>FECHA</th><th>USUARIO</th><th>ACCIONES</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function filterTable() {
+  const val = document.getElementById('admin-filter').value;
+  renderAdminTable(val);
+}
+
+function cambiarEstado(id, newEstado) {
+  const d = DENUNCIAS.find(x=>x.id===id);
+  if(d) { d.estado=newEstado; renderAdminTable(document.getElementById('admin-filter').value); }
+}
+
+function adminVerDetalle(id) {
+  const d = DENUNCIAS.find(x=>x.id===id);
+  if(d) { loadDetalle(d,'s-admin'); go('s-detalle'); }
+}
+
+// ── CHAT ──
+function sendMsg() {
+  const input=document.getElementById('msg-input');
+  const text=input.value.trim();
+  if(!text)return;
+  const list=document.getElementById('messages-list');
+  const now=new Date();
+  const time=`${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  list.insertAdjacentHTML('beforeend',`
+    <div class="msg msg-user">
+      <div class="msg-from">Tú</div>
+      <div class="msg-bubble">${text}</div>
+      <div class="msg-time">${time}</div>
+    </div>
+  `);
+  input.value='';
+  list.scrollTop=list.scrollHeight;
+  setTimeout(()=>{
+    list.insertAdjacentHTML('beforeend',`
+      <div class="msg msg-admin">
+        <div class="msg-from">Administrador</div>
+        <div class="msg-bubble">Hemos recibido tu mensaje y lo estamos revisando. Te responderemos a la brevedad.</div>
+        <div class="msg-time">${time}</div>
+      </div>
+    `);
+    list.scrollTop=list.scrollHeight;
+  },1200);
+}
+
+// Init
+renderAdminTable('todas');
+</script>
+</body>
+</html>
